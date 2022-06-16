@@ -1,0 +1,69 @@
+.header {
+  grid-area: header;
+  background-color: #fff;
+  padding: 6px 0px 6px 10px;
+  display: flex;
+}
+
+.main {
+  grid-area: main;
+  background-color: #e1dfdd;
+  padding-left: 40px;
+  padding-right: 32px;
+  max-width: calc(100vw - 400px);
+  max-height: calc(100vh - 100px);
+  overflow: auto;
+}
+
+.footer {
+  grid-area: footer;
+  background-color: #f3f2f1;
+  padding: 12px 20px;
+}
+
+.sidenav {
+  grid-area: sidenav;
+  background-color: #fff;
+  padding: 25px;
+}
+
+body {
+  background-color: rgba(225, 223, 221, 0.2);
+  min-height: 611px;
+  margin: 0;
+}
+
+.page-title {
+  padding: 52px 0px;
+}
+
+.card {
+  border-radius: 2px;
+  background-clip: padding-box;
+}
+
+.ms-Dropdown-container {
+ margin-left : auto;
+ width: 180px;
+}
+
+.kpi-header-wrapper{
+ background-image: transparent;
+}
+
+.kpi-content-wrapper .card{
+ background-color: #fff; 
+ width: 25%; 
+ border-radius : 0.5rem; 
+ font-size: 2rem; 
+ font-weight: 400; 
+ color: red;
+ padding : 28px;
+}
+
+.nav {
+ width: 240px;
+ margin-left: 12px
+}
+
+
