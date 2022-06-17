@@ -25,6 +25,23 @@ con <- dbConnect(odbc::odbc(), .connection_string = "Driver={SQL Server};",
                  uid = uid, pwd = pwd, timeout = 10)
 to_date <- '2020-05-01'
 
+netChange <- function(df_prev, df_current) {
+  renderText({
+    req(df_prev)
+    req(df_current)
+    previous <- nrow(df_prev())
+    current <- nrow(df_current())
+    result <- round((current - previous)/previous * 100)
+    
+    if(result >=0 ) { 
+      result <- paste("<span style= \"color:#1E90FF\"> +", abs(result), "</span>")
+    } else{
+      result <- paste("<span style= \"color:#ff5733\"> -", abs(result), "</span>")
+    }
+    return(result)
+  })
+}
+
 shinyServer(function(input, output) {
     
   computing <- reactiveVal(FALSE)
@@ -45,7 +62,7 @@ shinyServer(function(input, output) {
   
   filtered_deals <- eventReactive(input$search, {
     req(input$fromDate)
-    query <- paste("SELECT * FROM [dbo].[Orders] WHERE [Order Date] >= '", input$fromDate, "' AND [Order Date] <= '", input$toDate,"'", sep = "")
+    query <- paste("SELECT * FROM [dbo].[orders] WHERE [Order Date] >= '", input$fromDate, "' AND [Order Date] <= '", input$toDate,"'", sep = "")
     filtered_deals <- dbGetQuery(con, query)
   })
   
@@ -68,27 +85,26 @@ shinyServer(function(input, output) {
   overview_orders_filtered <- reactive({
     req(input$overview_filter_date)
     from_date <- as.Date(to_date) - as.numeric(input$overview_filter_date)
-    query <- paste("SELECT * FROM [dbo].[Orders] WHERE [Order Date] >= '", from_date, "' AND [Order Date] <= '", to_date,"'", sep = "")
+    query <- paste("SELECT * FROM [dbo].[orders] WHERE [Order Date] >= '", from_date, "' AND [Order Date] <= '", to_date,"'", sep = "")
     overview_orders_filtered <- dbGetQuery(con, query)
   })
   
   overview_returns_filtered <- reactive({
     req(input$overview_filter_date)
     from_date <- as.Date(to_date) - as.numeric(input$overview_filter_date)
-    query <- paste("SELECT * FROM [dbo].[Orders], [dbo].[Returns]",
-                   "WHERE [dbo].[Orders].[Order ID] = [dbo].[Returns].[Order ID] AND [Order Date] >= '",
+    query <- paste("SELECT * FROM [dbo].[orders], [dbo].[Returns]",
+                   "WHERE [dbo].[orders].[Order ID] = [dbo].[Returns].[Order ID] AND [Order Date] >= '",
                    from_date, "' AND [Order Date] <= '", to_date,"'",
                    " AND [dbo].[Returns].[Returned] = 'yes'", sep = "")
-    print(query)
     overview_returns_filtered <- dbGetQuery(con, query)
   })
   
-  output$customers_in_date_range <- renderText({
+  output$customers <- renderText({
     req(overview_orders_filtered)
     length(unique(overview_orders_filtered()$`Customer ID`))
   })
   
-  output$revenue_in_date_range <- renderText({
+  output$revenue <- renderText({
     req(overview_orders_filtered)
     paste("$ ", round(sum(overview_orders_filtered()$Sales),2), sep ="")
   })
@@ -98,7 +114,7 @@ shinyServer(function(input, output) {
     nrow(overview_orders_filtered())
   })
   
-  output$returns_in_date_range <- renderText({
+  output$returns <- renderText({
     req(overview_returns_filtered)
     nrow(overview_returns_filtered())
   })
@@ -107,29 +123,23 @@ shinyServer(function(input, output) {
     req(input$overview_filter_date)
     from_date <- as.Date(to_date) - 2 * 30
     to_date <- as.Date(to_date) - 30
-    query <- paste("SELECT * FROM [dbo].[Orders], [dbo].[Returns]",
-                   "WHERE [dbo].[Orders].[Order ID] = [dbo].[Returns].[Order ID] AND [Order Date] >= '",
+    query <- paste("SELECT * FROM [dbo].[orders], [dbo].[Returns]",
+                   "WHERE [dbo].[orders].[Order ID] = [dbo].[Returns].[Order ID] AND [Order Date] >= '",
                    from_date, "' AND [Order Date] <= '", to_date,"'",
                    " AND [dbo].[Returns].[Returned] = 'yes'", sep = "")
     overview_returns_filtered_previous_date_range <- dbGetQuery(con, query)
   })
   
-  output$returns_previous_date_range <- renderText({
-    req(overview_returns_filtered_previous_date_range)
-    req(overview_returns_filtered)
-    previous <- nrow(overview_returns_filtered_previous_date_range())
-    current <- nrow(overview_returns_filtered())
-    result <- round((current - previous)/previous * 100)
-  })
+  output$returns_change <- netChange(overview_returns_filtered_previous_date_range, overview_returns_filtered)
+
   
   report_filtered <- reactive({
     req(input$report_type)
     req(input$report_filter_date)
     from_date <- as.Date(to_date) - as.numeric(input$report_filter_date)
     query <- paste("SELECT [Order Date], sum([Sales])",
-                   " FROM [dbo].[Orders] WHERE [Order Date] >= '", from_date, "' AND [Order Date] <= '", to_date,"'",
+                   " FROM [dbo].[orders] WHERE [Order Date] >= '", from_date, "' AND [Order Date] <= '", to_date,"'",
                    " GROUP BY [Order Date]", sep = "")
-    print(query)
     report_filtered <- dbGetQuery(con, query)
     report_filtered$'Order Date' <- lubridate::ymd(report_filtered$'Order Date')
     colnames(report_filtered) <- c("Date", input$report_type)
@@ -152,5 +162,6 @@ shinyServer(function(input, output) {
                           gridcolor = 'ffff'),
              plot_bgcolor='#ffffff')
   })
+  
   
 })

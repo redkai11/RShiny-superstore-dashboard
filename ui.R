@@ -64,14 +64,27 @@ makePage <- function (title, subtitle, contents) {
 app_header <- flexPanel(
   id = "header",
   align_items = "center",
-  flex = c(0, 1, 0),
-  img(src = "superstore-logo.png", style = "width: 150px"),
-  div(
-    Text(variant = "xLarge", "| Dashboard", style="color: gray;"), 
-    style = "margin-bottom: 10px;"),
-  CommandBar(items = header_commandbar_list),
-  style = "box-shadow: 0 0 10px #000;"
+  flex = c(0, 1),
+  div(class = "logo-wrapper",
+      img(src = "superstore-logo.png", style = "width: 200px; margin: 0 20px")
+      ),
+  makeCard("", SearchBox.shinyInput("search", placeholder = "Search"), size = 6),
+  makeCard("", CommandBar(items = header_commandbar_list), size  = 6), 
+  style = ""
+  #makeCard("", SearchBox.shinyInput("search", placeholder = "Search"), size = 6),
+  # div(
+  #   #Text(variant = "xLarge", "| Dashboard", style="color: gray;"),
+  #   style = "margin-bottom: 10px;"),
 )
+
+# app_header <- div(
+#   Stack(
+#     horizontal = TRUE, 
+#     makeCard("", img(src = "superstore-logo.png", style = "width: 200px; margin: 0 20px"), size = 2),
+#     makeCard("", SearchBox.shinyInput("search", placeholder = "Search"), size = 8),
+#     makeCard("", CommandBar(items = header_commandbar_list), size = 2),
+#   )
+# )
 
 navigation <- Nav(
   groups = list(
@@ -107,14 +120,14 @@ customers_kpi <- Stack(
   ),
   div(
     Stack(
-      Text("Total Customer"),
+      span("Total Customer", class = "kpi-title"),
       Stack(
         horizontal = TRUE,
         style= "margin-top: 16px;",
         div(
-          class = "kpi-value",
+          class = "kpi-data",
           style = "color: black; font-size: 2.5rem;",
-          textOutput("customers_in_date_range")
+          textOutput("customers")
         ),
         div(
           class = "net-change",
@@ -136,14 +149,14 @@ revenue_kpi <- Stack(
   ),
   div(
     Stack(
-      Text("Total Revenue"),
+      span("Total Revenue", class = "kpi-title"),
       Stack(
         horizontal = TRUE,
         style= "margin-top: 16px;",
         div(
-          class = "kpi-value",
+          class = "kpi-data",
           style = "color: black; font-size: 2.5rem;",
-          textOutput("revenue_in_date_range")
+          textOutput("revenue")
         ),
         div(
           class = "net-change",
@@ -164,14 +177,14 @@ orders_kpi <- Stack(
   ),
   div(
     Stack(
-      Text("Total Orders"),
+      span("Total Orders", class = "kpi-title"),
       Stack(
         horizontal = TRUE,
         style= "margin-top: 16px;",
         div(
-          class = "kpi-value",
+          class = "kpi-data",
           style = "color: black; font-size: 2.5rem;",
-          textOutput("orders_in_date_range")
+          textOutput("orders")
         ),
         div(
           class = "net-change",
@@ -192,18 +205,18 @@ returns_kpi <- Stack(
   ),
   div(
     Stack(
-      Text("Total Returns"),
+      span("Total Returns", class = "kpi-title"),
       Stack(
         horizontal = TRUE,
         style= "margin-top: 16px;",
         div(
-          class = "kpi-value",
+          class = "kpi-data",
           style = "color: black; font-size: 2.5rem;",
-          textOutput("returns_in_date_range")
+          textOutput("returns")
         ),
         div(
           class = "net-change",
-          textOutput("returns_previous_date_range")
+          htmlOutput("returns_change")
         )
       )
     )
@@ -235,12 +248,13 @@ kpi <- Stack(
   Stack(
     horizontal = TRUE,
     class = "kpi-header-wrapper",
-    makeCard("", h3("Overview"), size = 2),
-    makeCard("", Dropdown.shinyInput("overview_filter_date", value = "30", options = options), size = 2, style = "margin-left : auto;")
+    makeCard("", span("Overview", class = "card-title"), size = 2),
+    makeCard("", Dropdown.shinyInput("overview_filter_date", value = "30", options = options), size = 2, style = "margin-left : auto; margin-bottom: 16px;")
   ),
   Stack(
     horizontal = TRUE,
     class = "kpi-content-wrapper",
+    style = "display: flex; justify-content: space-between;",
     tokens = list(childrenGap = 5),
     makeCard("", customers_kpi, size = 3),
     makeCard("", revenue_kpi, size = 3),
@@ -262,8 +276,8 @@ report <- Stack(
     tokens = list(childrenGap = 5),
     Stack(
       horizontal = TRUE,
-      makeCard("", h3("Report"), size = 2),
-      makeCard("", Dropdown.shinyInput("report_type", value = "Sales", options = report_options), size = 2, style = "margin-left : 30px;"),
+      makeCard("", span("Report", class = 'card-title'), size = 2),
+      makeCard("", Dropdown.shinyInput("report_type", value = "Sales", options = report_options), size = 2, style = "margin-left : 30px; width: fit-content"),
       makeCard("", Dropdown.shinyInput("report_filter_date", value = "30", options = options), size = 2, style = "margin-left : auto;")
     ),
     Stack(
@@ -274,7 +288,7 @@ report <- Stack(
   
                     
 app_content <- div(
-      makeCard("", kpi, size = 12, style = "background-color: transparent; margin-bottom: 28px"),
+      makeCard("", kpi, size = 12, style = "background-color: transparent; margin-bottom: 16px; padding: 0 28px;"),
       # Stack(
       #   horizontal = FALSE,
       #   tokens = list(childrenGap = 5),
@@ -282,7 +296,7 @@ app_content <- div(
       #   reactOutput("spinner"),
       #   uiOutput("analysis")
       # )
-      makeCard("", report, size = 8, style = "background-color: transparent; margin-bottom: 28px")
+      makeCard("", report, size = 8, style = "background-color: transparent; margin-bottom: 28px; padding: 0 28px;")
     )
 
 app_footer <- flexPanel(
