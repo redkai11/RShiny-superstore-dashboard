@@ -1,3 +1,7 @@
+:root {
+  --borderRadius : 2rem;
+}
+
 .header {
   grid-area: header;
   background-color: #fff;
@@ -7,7 +11,7 @@
 
 .main {
   grid-area: main;
-  background-color: #e1dfdd;
+  background-color: #d2d0ce;
   padding-left: 40px;
   padding-right: 32px;
   max-width: calc(100vw - 400px);
@@ -44,7 +48,6 @@ body {
 
 .ms-Dropdown-container {
  margin-left : auto;
- width: 180px;
 }
 
 .kpi-header-wrapper{
@@ -53,11 +56,8 @@ body {
 
 .kpi-content-wrapper .card{
  background-color: #fff; 
- width: 25%; 
- border-radius : 0.5rem; 
- font-size: 2rem; 
- font-weight: 400; 
- color: red;
+ width: 24%; 
+ border-radius : var(--borderRadius);
  padding : 28px;
 }
 
@@ -66,4 +66,28 @@ body {
  margin-left: 12px
 }
 
+.card-title {
+ font-size: 2rem;
+ font-weight: 700;
+}
+
+.kpi-title {
+ font-size: 1.5rem;
+ font-weight: 600;
+ color: #a19f9d;
+}
+
+.kpi-data {
+ font-size: 2.5rem;
+ font-weight: 900;
+ max-width: 150px;
+ min-width: 120px;
+ color: black;
+}
+
+.report-wrapper {
+ background-color: white;
+ border-radius: var(--borderRadius);
+ padding: 28px;
+}
 
