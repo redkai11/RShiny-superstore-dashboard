@@ -1,5 +1,5 @@
 # RShiny-superstore-dashboard
-![Screenshot](Capture.PNG)
+![Screenshot](Capture1.PNG)
 
 ## Technologies
 Project is created with:
