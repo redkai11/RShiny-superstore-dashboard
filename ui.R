@@ -61,37 +61,51 @@ makePage <- function (title, subtitle, contents) {
 
 
 # UI components ---------------------------------------------------------
-app_header <- flexPanel(
-  id = "header",
-  align_items = "center",
-  flex = c(0, 1),
-  div(class = "logo-wrapper",
-      img(src = "superstore-logo.png", style = "width: 200px; margin: 0 20px;")
-      ),
-  div(class = "search-bar-wrapper",
-      SearchBox.shinyInput("search", placeholder = "Search")
-      ),
-  makeCard("", CommandBar(items = header_commandbar_list), style = "padding : 14px;"), 
-  style = ""
+# app_header <- flexPanel(
+#   id = "header",
+#   align_items = "center",
+#   flex = c(0, 1),
+#   div(class = "search-bar-wrapper",
+#       SearchBox.shinyInput("search", placeholder = "Search")
+#       ),
+#   makeCard("", CommandBar(items = header_commandbar_list), style = "padding : 14px;"), 
+#   style = ""
+# )
+
+app_header <- fluidRow(
+  style = "display: flex; align-items: center; margin: 12px 0",
+  column(6, offset = 0, SearchBox.shinyInput("search", placeholder = "Search")),
+  column(4, ""),
+  column(2, CommandBar(items = header_commandbar_list))
 )
 
 
-navigation <- Nav(
-  groups = list(
-    list(links = list(
-      list(name = 'Overview', url = '', key = 'home', icon = 'Home'),
-      list(name = 'Analysis', url = '', key = 'analysis', icon = 'AnalyticsReport')
-    ))
-  ),
-  initialSelectedKey = 'home',
-  styles = list(
-    root = list(
-      height = '100%',
-      boxSizing = 'border-box',
-      overflowY = 'auto'
+navigation <- div(
+  div(class = "logo-wrapper",
+                 img(src = "superstore-logo.png", style = "width: 200px; margin: 0 20px;")),
+  Nav(
+    groups = list(
+      list(links = list(
+        
+        div(class = "logo-wrapper",
+            img(src = "superstore-logo.png", style = "max-width:100%; max-height:100%;")
+        ),
+        list(name = 'Overview', url = '', key = 'home', icon = 'Home'),
+        list(name = 'Analysis', url = '', key = 'analysis', icon = 'AnalyticsReport')
+      ))
+    ),
+    initialSelectedKey = 'home',
+    styles = list(
+      root = list(
+        height = '100%',
+        boxSizing = 'border-box',
+        overflowY = 'auto'
+      )
     )
   )
 )
+  
+
 
 
 # KPI Content ---------------------------------------------------------
@@ -103,7 +117,7 @@ customers_kpi <- Stack(
   style = "display: flex; align-items: center;",
   div(
     style=icon_style,
-    FontIcon(iconName = "AlignVerticalBottom", style = "font-size: 1.5em; text-align: center; display: block; margin: 10%;")
+    FontIcon(iconName = "PeopleAdd", style = "font-size: 1.5em; text-align: center; display: block; margin: 10%;")
   ),
   div(
     Stack(
@@ -119,7 +133,11 @@ customers_kpi <- Stack(
         ),
         div(
           class = "net-change",
-          htmlOutput("customers_change")
+          TooltipHost(
+            content = "Change from Last Week/Month/Year",
+            delay = 0,
+            htmlOutput("customers_change")
+          )
         )
       )
     )
@@ -133,7 +151,7 @@ revenue_kpi <- Stack(
   style = "display: flex; align-items: center;",
   div(
     style=icon_style,
-    FontIcon(iconName = "AlignVerticalBottom", style = "font-size: 1.5em; text-align: center; display: block; margin: 10%;")
+    FontIcon(iconName = "Money", style = "font-size: 1.5em; text-align: center; display: block; margin: 10%;")
   ),
   div(
     Stack(
@@ -163,7 +181,7 @@ orders_kpi <- Stack(
   style = "display: flex; align-items: center;",
   div(
     style=icon_style,
-    FontIcon(iconName = "AlignVerticalBottom", style = "font-size: 1.5em; text-align: center; display: block; margin: 10%;")
+    FontIcon(iconName = "ActivateOrders", style = "font-size: 1.5em; text-align: center; display: block; margin: 10%;")
   ),
   div(
     Stack(
@@ -191,7 +209,7 @@ returns_kpi <- Stack(
   style = "display: flex; align-items: center;",
   div(
     style=icon_style,
-    FontIcon(iconName = "AlignVerticalBottom", style = "font-size: 1.5em; text-align: center; display: block; margin: 10%;")
+    FontIcon(iconName = "Rotate90CounterClockwise", style = "font-size: 1.5em; text-align: center; display: block; margin: 10%;")
   ),
   div(
     Stack(
@@ -236,21 +254,19 @@ options <- list(
 
 kpi <- Stack(
   horizontal = FALSE,
-  Stack(
-    horizontal = TRUE,
-    class = "kpi-header-wrapper",
-    makeCard("", span("Overview", class = "card-title"), size = 2),
-    makeCard("", Dropdown.shinyInput("overview_filter_date", value = "30", options = options), size = 2, style = "margin-left : auto; margin-bottom: 16px;")
+  fluidRow(
+    column(12, Stack(
+      horizontal = TRUE,
+      class = "kpi-header-wrapper",
+      makeCard("", span("Overview", class = "card-title"), size = 2),
+      makeCard("", Dropdown.shinyInput("overview_filter_date", value = "30", options = options), size = 2, style = "margin-left : auto; margin-bottom: 16px;")
+    ))
   ),
-  Stack(
-    horizontal = TRUE,
-    class = "kpi-content-wrapper",
-    style = "display: flex; justify-content: space-between;",
-    tokens = list(childrenGap = 5),
-    makeCard("", customers_kpi, size = 3),
-    makeCard("", revenue_kpi, size = 3),
-    makeCard("", orders_kpi, size = 3),
-    makeCard("", returns_kpi, size = 3)
+  fluidRow(
+    column(3, div(class = "kpi-style", customers_kpi)),
+    column(3, div(class = "kpi-style", revenue_kpi)),
+    column(3, div(class = "kpi-style", orders_kpi)), 
+    column(3, div(class = "kpi-style", returns_kpi))
   )
 )
 
@@ -277,10 +293,26 @@ report <- Stack(
     )
   )
   
+category <- Stack(
+  horizontal = FALSE,
+  class = "report-wrapper",
+  tokens = list(childrenGap = 5),
+  Stack(
+    horizontal = TRUE,
+    makeCard("", span("Report", class = 'card-title'), size = 2),
+  ),
+  div(
+    plotlyOutput("category_chart")
+  )
+)
                     
-app_content <- div(
-      makeCard("", kpi, size = 12, style = "background-color: transparent; margin-bottom: 16px; padding: 0 28px;"),
-      makeCard("", report, size = 8, style = "background-color: transparent; margin-bottom: 28px; padding: 0 28px;")
+app_content <- fluidPage(
+      fluidRow(
+        style = "margin: 25px 0;",
+        column(12, kpi)
+      ),
+      column(9, report),
+      column(3, category)
     )
 
 app_footer <- flexPanel(
@@ -293,20 +325,30 @@ app_footer <- flexPanel(
 
 # Define UI for application that draws a histogram
 shinyUI(
-  gridPage(
+  fluidPage(
     tags$head(includeCSS("www/styles.css")),
-    template = "grail-left-sidebar",
-    gap = "10px",
-    rows = list(
-      default = "70px 1fr 30px"
-    ),
-    columns = list(
-      default = "minmax(240px, 12%) auto auto"
-    ),
-    header = app_header,
-    sidebar = navigation,
-    content = app_content,
-    footer = app_footer
+    fluidRow(
+      column(2, navigation, style="background-color : white; background-clip : padding-box;"),
+      column(10,
+             column(12, app_header, style = "background-color : white; background-clip : padding-box;"),
+             column(12, app_content)
+             )
+    )
   )
+  # gridPage(
+  #   tags$head(includeCSS("www/styles.css")),
+  #   template = "grail-left-sidebar",
+  #   gap = "10px",
+  #   rows = list(
+  #     default = "70px 1fr 30px"
+  #   ),
+  #   columns = list(
+  #     default = "minmax(240px, 12%) auto auto"
+  #   ),
+  #   header = app_header,
+  #   sidebar = navigation,
+  #   content = app_content,
+  #   footer = app_footer
+  # )
 )
 

@@ -2,6 +2,10 @@
   --borderRadius : 2rem;
 }
 
+.container-fluid {
+ padding: 0;
+}
+
 .header {
   grid-area: header;
   background-color: #fff;
@@ -74,6 +78,12 @@ body {
  font-weight: 700;
 }
 
+.kpi-style {
+ background-color: white;
+ padding: 36px 24px;
+ border-radius: 20px;
+}
+
 .kpi-title {
  font-size: 1.5rem;
  font-weight: 600;
@@ -96,20 +106,17 @@ body {
  padding: 3px 10px;
 }
 
+.logo-wrapper {
+ background-color: white;
+ background-clip : padding-box;
+}
+
 .report-wrapper {
  background-color: white;
  border-radius: var(--borderRadius);
  padding: 28px;
 }
+
 .net-change {
  display: contents;
-}
-
-.search-bar-wrapper {
- display: flex;
- padding: 28px;
-}
-
-.search-bar-wrapper .ms-SearchBox{
- width: 631px;
 }
