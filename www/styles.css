@@ -58,7 +58,10 @@ body {
  background-color: #fff; 
  width: 24%; 
  border-radius : var(--borderRadius);
- padding : 28px;
+ padding: 36px 24px;
+ display : flex;
+ justify-content : center;
+ align-items: center;
 }
 
 .nav {
@@ -75,14 +78,22 @@ body {
  font-size: 1.5rem;
  font-weight: 600;
  color: #a19f9d;
+ position: absolute;
+ display: contents;
 }
 
 .kpi-data {
  font-size: 2.5rem;
  font-weight: 900;
- max-width: 150px;
- min-width: 120px;
+ max-width: 125px;
+ min-width: 100px;
  color: black;
+}
+
+.net-change {
+ font-weight: 700;
+ border-radius: 50px;
+ padding: 3px 10px;
 }
 
 .report-wrapper {
@@ -90,4 +101,15 @@ body {
  border-radius: var(--borderRadius);
  padding: 28px;
 }
+.net-change {
+ display: contents;
+}
 
+.search-bar-wrapper {
+ display: flex;
+ padding: 28px;
+}
+
+.search-bar-wrapper .ms-SearchBox{
+ width: 631px;
+}

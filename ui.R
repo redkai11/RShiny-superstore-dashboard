@@ -21,7 +21,7 @@ library(plotly)
 
 # Global CSS Variables ---------------------------------------------------------
 
-icon_style <- "width: 50px; height: 50px; border-radius: 50%; background-color: #b3dbf2; color : #0078d4;"
+icon_style <- "width: 50px; height: 50px; border-radius: 50%; background-color: #b3dbf2; color : #0078d4; display: flex; justify-content: center; align-items: center;"
 
 ## Header Commander Bar
 
@@ -66,34 +66,21 @@ app_header <- flexPanel(
   align_items = "center",
   flex = c(0, 1),
   div(class = "logo-wrapper",
-      img(src = "superstore-logo.png", style = "width: 200px; margin: 0 20px")
+      img(src = "superstore-logo.png", style = "width: 200px; margin: 0 20px;")
       ),
-  makeCard("", SearchBox.shinyInput("search", placeholder = "Search"), size = 6),
-  makeCard("", CommandBar(items = header_commandbar_list), size  = 6), 
+  div(class = "search-bar-wrapper",
+      SearchBox.shinyInput("search", placeholder = "Search")
+      ),
+  makeCard("", CommandBar(items = header_commandbar_list), style = "padding : 14px;"), 
   style = ""
-  #makeCard("", SearchBox.shinyInput("search", placeholder = "Search"), size = 6),
-  # div(
-  #   #Text(variant = "xLarge", "| Dashboard", style="color: gray;"),
-  #   style = "margin-bottom: 10px;"),
 )
 
-# app_header <- div(
-#   Stack(
-#     horizontal = TRUE, 
-#     makeCard("", img(src = "superstore-logo.png", style = "width: 200px; margin: 0 20px"), size = 2),
-#     makeCard("", SearchBox.shinyInput("search", placeholder = "Search"), size = 8),
-#     makeCard("", CommandBar(items = header_commandbar_list), size = 2),
-#   )
-# )
 
 navigation <- Nav(
   groups = list(
     list(links = list(
-      list(name = 'Overview', url = '#!/', key = 'home', icon = 'Home'),
-      list(name = 'Analysis', url = '#!/other', key = 'analysis', icon = 'AnalyticsReport'),
-      list(name = 'shiny.fluent', url = '', key = 'repo', icon = 'GitGraph'),
-      list(name = 'shiny.react', url = '', key = 'shinyreact', icon = 'GitGraph'),
-      list(name = 'Appsilon', url = '', key = 'appsilon', icon = 'WebAppBuilderFragment')
+      list(name = 'Overview', url = '', key = 'home', icon = 'Home'),
+      list(name = 'Analysis', url = '', key = 'analysis', icon = 'AnalyticsReport')
     ))
   ),
   initialSelectedKey = 'home',
@@ -120,24 +107,25 @@ customers_kpi <- Stack(
   ),
   div(
     Stack(
-      span("Total Customer", class = "kpi-title"),
+      span("Total Customers", class = "kpi-title"),
       Stack(
         horizontal = TRUE,
-        style= "margin-top: 16px;",
+        style = "display: flex; align-items: center;",
         div(
           class = "kpi-data",
-          style = "color: black; font-size: 2.5rem;",
+          style = "color: black; font-size: 2.5rem; display: block;",
           textOutput("customers")
+          
         ),
         div(
           class = "net-change",
-          h3("smt")
-          #textOutput("customers_previous_date_range")
+          htmlOutput("customers_change")
         )
       )
     )
   )
 )
+
 
 revenue_kpi <- Stack(
   horizontal = TRUE,
@@ -152,20 +140,22 @@ revenue_kpi <- Stack(
       span("Total Revenue", class = "kpi-title"),
       Stack(
         horizontal = TRUE,
-        style= "margin-top: 16px;",
+        style = "display: flex; align-items: center;",
         div(
           class = "kpi-data",
-          style = "color: black; font-size: 2.5rem;",
+          style = "color: black; font-size: 2.5rem; display: block;",
           textOutput("revenue")
+          
         ),
         div(
           class = "net-change",
-          Text("+ 10%")
+          htmlOutput("revenue_change")
         )
       )
     )
   )
 )
+
 
 orders_kpi <- Stack(
   horizontal = TRUE,
@@ -180,15 +170,15 @@ orders_kpi <- Stack(
       span("Total Orders", class = "kpi-title"),
       Stack(
         horizontal = TRUE,
-        style= "margin-top: 16px;",
+        style = "display: flex; align-items: center;",
         div(
           class = "kpi-data",
-          style = "color: black; font-size: 2.5rem;",
+          style = "color: black; font-size: 2.5rem; display: block;",
           textOutput("orders")
         ),
         div(
           class = "net-change",
-          Text("+ 10%")
+          htmlOutput("orders_change")
         )
       )
     )
@@ -208,11 +198,12 @@ returns_kpi <- Stack(
       span("Total Returns", class = "kpi-title"),
       Stack(
         horizontal = TRUE,
-        style= "margin-top: 16px;",
+        style = "display: flex; align-items: center;",
         div(
           class = "kpi-data",
-          style = "color: black; font-size: 2.5rem;",
+          style = "color: black; font-size: 2.5rem; display: block;",
           textOutput("returns")
+          
         ),
         div(
           class = "net-change",
@@ -280,22 +271,15 @@ report <- Stack(
       makeCard("", Dropdown.shinyInput("report_type", value = "Sales", options = report_options), size = 2, style = "margin-left : 30px; width: fit-content"),
       makeCard("", Dropdown.shinyInput("report_filter_date", value = "30", options = options), size = 2, style = "margin-left : auto;")
     ),
-    Stack(
-      makeCard("", plotlyOutput("report"), size = 12)
+    div(
+      #Spinner(size = 3, label = "Loading, please wait..."),
+      plotlyOutput("report")
     )
-
   )
   
                     
 app_content <- div(
       makeCard("", kpi, size = 12, style = "background-color: transparent; margin-bottom: 16px; padding: 0 28px;"),
-      # Stack(
-      #   horizontal = FALSE,
-      #   tokens = list(childrenGap = 5),
-      #   makeCard("", filters, size = 12, style = "max-height: 600px;"),
-      #   reactOutput("spinner"),
-      #   uiOutput("analysis")
-      # )
       makeCard("", report, size = 8, style = "background-color: transparent; margin-bottom: 28px; padding: 0 28px;")
     )
 
