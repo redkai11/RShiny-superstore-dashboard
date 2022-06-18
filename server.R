@@ -25,6 +25,9 @@ con <- dbConnect(odbc::odbc(), .connection_string = "Driver={SQL Server};",
                  uid = uid, pwd = pwd, timeout = 10)
 to_date <- '2020-05-01'
 
+#query <- c("Select * from [dbo].[orders]")
+
+#df <- dbGetQuery(con,query)
 
 # Helper Functions      ---------------------------------------------------------
 color_net_Change <- function(x) {
@@ -44,12 +47,6 @@ number_formatter <- function(x) {
     x < 1e6 ~ paste0(as.character(round(x/1e3, 2)), "k"),
     x < 1e9 ~ paste0(as.character(x/1e6), "m")
   )
-}
-
-load_data <- function() {
-  Sys.sleep(2)
-  hide("loading_page")
-  show("main_content")
 }
 
 
@@ -202,7 +199,44 @@ shinyServer(function(input, output, session) {
                           zerolinewidth = 2,
                           gridcolor = 'ffff'),
              plot_bgcolor='#ffffff')
+    fig <- fig %>%
+      layout(hovermode = "x unified")
   })
   
+  output$category_chart <- renderPlotly({
+    req(overview_orders_filtered)
+    
+    #category_df <- overview_orders_filtered() %>% count(Category, sort = TRUE)
+    
+    fig <- plot_ly(overview_orders_filtered() %>% count(Category, sort = TRUE), labels = ~Category, values = ~n,
+                   textposition = 'inside',
+                   #textinfo = 'label+percent',
+                   insidetextfont = list(color = '#ffffff'),
+                   hoverinfo = 'text',
+                   #text = ~paste('$', n, ' billions'),
+                   marker = list(colors = c('rgb(211,94,96)', 'rgb(128,133,133)', 
+                                            'rgb(144,103,167)', 'rgb(171,104,87)', 
+                                            'rgb(114,147,203)'),
+                                  line = list(color = '#FFFFFF', width = 1)))
+                   #The 'pull' attribute can also be used to create space between the sectors
+                   #showlegend = TRUE)
+    fig <- fig %>% add_pie(hole = 0.6)
+    fig <- fig %>% layout(legend = list(orientation = "h",   # show entries horizontally
+                                        xanchor = "center",  # use center of legend as anchor
+                                        x = 0.5, y = -0.1))  
+    fig <- fig %>% layout(margin = list(l = 10, r = 10))
+    return(fig)
+  })
   
+  # output$category_chart <- renderPlotly({
+  #   req(overview_orders_filtered)
+  #   fig <- plot_ly(overview_orders_filtered() %>% 
+  #                    rename_with(make.names) %>% 
+  #                    count(Product.Name, sort = TRUE) %>%
+  #                    slice(seq_len(3)), 
+  #                  x = ~Product.Name, y = ~n, type = 'bar', color = I("black"))
+  #   fig <- fig %>% layout(title = "Features",
+  #                         xaxis = list(title = ""),
+  #                         yaxis = list(title = ""))
+  # })
 })
