@@ -10,6 +10,8 @@
 library(shiny)
 library(leaflet)
 library(DBI)
+
+library(shinyjs)
 library(dplyr)
 library(lubridate)
 library(plotly)
@@ -17,17 +19,15 @@ library(plotly)
 
 # SQL Server Connection ---------------------------------------------------------
 
+
 azure_credentials <- read.table("KEY-FILE.txt", sep = ",", header = FALSE)
 uid <- azure_credentials[1,1]
 pwd <- azure_credentials[1,2]
 con <- dbConnect(odbc::odbc(), .connection_string = "Driver={SQL Server};", 
                  server = "redkai11-superstore.database.windows.net", database = "superstore", 
                  uid = uid, pwd = pwd, timeout = 10)
-to_date <- '2020-05-01'
+to_date <- as.Date('2020-05-01')
 
-#query <- c("Select * from [dbo].[orders]")
-
-#df <- dbGetQuery(con,query)
 
 # Helper Functions      ---------------------------------------------------------
 color_net_Change <- function(x) {
@@ -44,7 +44,7 @@ color_net_Change <- function(x) {
 number_formatter <- function(x) {
   dplyr::case_when(
     x < 1e3 ~ as.character(x),
-    x < 1e6 ~ paste0(as.character(round(x/1e3, 2)), "k"),
+    x < 1e6 ~ paste0(as.character(round(x/1e3, 1)), "k"),
     x < 1e9 ~ paste0(as.character(x/1e6), "m")
   )
 }
@@ -52,28 +52,25 @@ number_formatter <- function(x) {
 
 
 shinyServer(function(input, output, session) {
-    
-  filtered_deals <- eventReactive(input$search, {
-    req(input$fromDate)
-    query <- paste("SELECT * FROM [dbo].[orders] WHERE [Order Date] >= '", input$fromDate, "' AND [Order Date] <= '", input$toDate,"'", sep = "")
-    filtered_deals <- dbGetQuery(con, query)
+
+  recent_orders_filtered <- reactive({
+    query <- paste("SELECT * FROM [dbo].[orders] WHERE [Order Date] >= '", to_date - 7, "' AND [Order Date] <= '", to_date,"'", sep = "")
+    recent_orders_filtered <- dbGetQuery(con, query)
   })
   
-  output$analysis <- renderUI({
-    req(input$filtered_deals)
-    items_list <- if(nrow(filtered_deals()) > 0){
-      DetailsList(items = filtered_deals())
+  output$recent_orders_table <- renderUI({
+    req(recent_orders_filtered())
+    items_list <- if(nrow(recent_orders_filtered()) > 0){
+      DetailsList(items = recent_orders_filtered())
     } else {
       p("No matching transactions.")
     }
-    
+
     Stack(
       tokens = list(childrenGap = 5),
-      Text(variant = "large", "Sales deals details", block = TRUE),
       div(style="max-height: 500px; overflow: auto", items_list)
     )
   })
-  
   
   overview_orders_filtered <- reactive({
     req(input$overview_filter_date)
@@ -81,6 +78,7 @@ shinyServer(function(input, output, session) {
     query <- paste("SELECT * FROM [dbo].[orders] WHERE [Order Date] >= '", from_date, "' AND [Order Date] <= '", to_date,"'", sep = "")
     overview_orders_filtered <- dbGetQuery(con, query)
   })
+
   
   overview_returns_filtered <- reactive({
     req(input$overview_filter_date)
@@ -93,17 +91,17 @@ shinyServer(function(input, output, session) {
   })
   
   output$customers <- renderText({
-    req(overview_orders_filtered)
+    req(overview_orders_filtered())
     number_formatter(length(unique(overview_orders_filtered()$`Customer ID`)))
   })
   
   output$revenue <- renderText({
-    req(overview_orders_filtered)
+    req(overview_orders_filtered())
     paste0("$", number_formatter(sum(overview_orders_filtered()$`Sales`)))
   })
   
   output$orders <- renderText({
-    req(overview_orders_filtered)
+    req(overview_orders_filtered())
     number_formatter(nrow(overview_orders_filtered()))
   })
   
@@ -134,7 +132,7 @@ shinyServer(function(input, output, session) {
   })
   
   output$customers_change <- renderText({
-    req(overview_orders_filtered)
+    req(overview_orders_filtered())
     req(overview_orders_filtered_previous_date_range)
     previous <- length(unique(overview_orders_filtered_previous_date_range()$`Customer ID`))
     current <- length(unique(overview_orders_filtered()$`Customer ID`))
@@ -143,7 +141,7 @@ shinyServer(function(input, output, session) {
   })
   
   output$revenue_change <- renderText({
-    req(overview_orders_filtered)
+    req(overview_orders_filtered())
     req(overview_orders_filtered_previous_date_range)
     previous <- sum(overview_orders_filtered_previous_date_range()$Sales)
     current <- sum(overview_orders_filtered()$Sales)
@@ -152,7 +150,7 @@ shinyServer(function(input, output, session) {
   })
   
   output$orders_change <- renderText({
-    req(overview_orders_filtered)
+    req(overview_orders_filtered())
     req(overview_orders_filtered_previous_date_range)
     previous <- nrow(overview_orders_filtered_previous_date_range())
     current <- nrow(overview_orders_filtered())
@@ -162,7 +160,7 @@ shinyServer(function(input, output, session) {
   
   
   output$returns_change <- renderText({
-    req(overview_returns_filtered)
+    req(overview_returns_filtered())
     req(overview_returns_filtered_previous_date_range)
     previous <- nrow(overview_returns_filtered_previous_date_range())
     current <- nrow(overview_returns_filtered())
@@ -184,10 +182,10 @@ shinyServer(function(input, output, session) {
     return(report_filtered)
   })
   
-  output$report <- renderPlotly({
-    req(report_filtered)
+  output$line_chart <- renderPlotly({
+    req(report_filtered())
     req(input$report_type)
-    fig <- plot_ly() %>%
+    fig <- plot_ly(height = 325) %>%
       add_trace(data = report_filtered(), type = 'scatter', mode = 'lines', 
                 fill = 'tozeroy', x = ~Date, y = ~report_filtered()[,2], name = 'GOOG',
                 fillcolor = 'rgba(168, 216, 234, 0.5)') %>%
@@ -204,16 +202,13 @@ shinyServer(function(input, output, session) {
   })
   
   output$category_chart <- renderPlotly({
-    req(overview_orders_filtered)
+    req(overview_orders_filtered())
+    category_df <- overview_orders_filtered() %>% count(Category, sort = TRUE)
     
-    #category_df <- overview_orders_filtered() %>% count(Category, sort = TRUE)
-    
-    fig <- plot_ly(overview_orders_filtered() %>% count(Category, sort = TRUE), labels = ~Category, values = ~n,
+    fig <- plot_ly(category_df, height = 325, labels = ~Category, values = ~n,
                    textposition = 'inside',
-                   #textinfo = 'label+percent',
                    insidetextfont = list(color = '#ffffff'),
                    hoverinfo = 'text',
-                   #text = ~paste('$', n, ' billions'),
                    marker = list(colors = c('rgb(211,94,96)', 'rgb(128,133,133)', 
                                             'rgb(144,103,167)', 'rgb(171,104,87)', 
                                             'rgb(114,147,203)'),
@@ -223,10 +218,26 @@ shinyServer(function(input, output, session) {
     fig <- fig %>% add_pie(hole = 0.6)
     fig <- fig %>% layout(legend = list(orientation = "h",   # show entries horizontally
                                         xanchor = "center",  # use center of legend as anchor
-                                        x = 0.5, y = -0.1))  
-    fig <- fig %>% layout(margin = list(l = 10, r = 10))
-    return(fig)
+                                        x = 0.5, y = -0.1),
+                          margin = list(l = 30, r = 30))
   })
+  
+  
+  # observe({
+  #   req(overview_orders_filtered())
+  #   print(head(overview_orders_filtered()))
+  #   print("going to sleep")
+  #   #Sys.sleep(3)
+  #   shinyjs::hide("loading-content")
+  #   print("reactiveFunc")
+  #   #shinyjs::hide("loading-content")
+  # })
+  # 
+  # output$view_orders <- eventReactive(input$viewOrdersNav {
+  #   query <- paste("SELECT * FROM [dbo].[orders]")
+  #   view_orders <- dbGetQuery(con, query)
+  #   #https://stackoverflow.com/questions/70080803/uri-routing-for-shinydashboard-using-shiny-router
+  # })
   
   # output$category_chart <- renderPlotly({
   #   req(overview_orders_filtered)
