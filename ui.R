@@ -10,6 +10,7 @@
 library(shiny)
 library(shiny.fluent)
 library(shiny.react)
+library(shinyjs)
 library(imola)
 library(stringr)
 library(dplyr)
@@ -59,6 +60,20 @@ makePage <- function (title, subtitle, contents) {
   contents)
 }
 
+appCSS <- "
+#loading-content {
+  position: absolute;
+  background: #000000;
+  opacity: 0.9;
+  z-index: 100;
+  left: 0;
+  right: 0;
+  height: 100%;
+  text-align: center;
+  color: #FFFFFF;
+}
+"
+
 
 # UI components ---------------------------------------------------------
 # app_header <- flexPanel(
@@ -91,6 +106,7 @@ navigation <- div(
             img(src = "superstore-logo.png", style = "max-width:100%; max-height:100%;")
         ),
         list(name = 'Overview', url = '', key = 'home', icon = 'Home'),
+        list(name = "View Orders", url = '', key = 'viewOrdersNav', icon = 'AnalyticsReport'),
         list(name = 'Analysis', url = '', key = 'analysis', icon = 'AnalyticsReport')
       ))
     ),
@@ -133,11 +149,7 @@ customers_kpi <- Stack(
         ),
         div(
           class = "net-change",
-          TooltipHost(
-            content = "Change from Last Week/Month/Year",
-            delay = 0,
-            htmlOutput("customers_change")
-          )
+          htmlOutput("customers_change")
         )
       )
     )
@@ -232,20 +244,6 @@ returns_kpi <- Stack(
   )
 )
 
-# Overview Content ---------------------------------------------------------
-
-
-filters <- Stack(
-  tokens = list(childrenGap = 10),
-  Stack(
-    horizontal = TRUE,
-    tokens = list(childrenGap = 10),
-    DatePicker.shinyInput("fromDate", value = as.Date("2016/1/1"), label = "From date"),
-    DatePicker.shinyInput("toDate", value = Sys.Date(), label = "To date"),
-    PrimaryButton.shinyInput("search", text = "Search", style = "width: 150px; margin-top:30px")
-  )
-)
-
 options <- list(
   list(key = "30", text = "Last 30 Days"),
   list(key = "7", text = "Last 7 Days"),
@@ -258,7 +256,13 @@ kpi <- Stack(
     column(12, Stack(
       horizontal = TRUE,
       class = "kpi-header-wrapper",
-      makeCard("", span("Overview", class = "card-title"), size = 2),
+      makeCard("", div(
+        span("Overview", class = "card-title"),
+        TooltipHost(
+          content = "Displays corresponding KPI value and change from the previous date range for the given date range.",
+          delay = 0,
+          FontIcon(iconName = "info", style = "margin: 0 12px; font-size: 16px;")
+        )), size = 2),
       makeCard("", Dropdown.shinyInput("overview_filter_date", value = "30", options = options), size = 2, style = "margin-left : auto; margin-bottom: 16px;")
     ))
   ),
@@ -276,43 +280,59 @@ report_options <- list(
   list(key = "Profit", text = "Profit")
 )
 
+# Report Content ---------------------------------------------------------
 
-report <- Stack(
-    horizontal = FALSE,
-    class = "report-wrapper",
-    tokens = list(childrenGap = 5),
-    Stack(
-      horizontal = TRUE,
-      makeCard("", span("Report", class = 'card-title'), size = 2),
-      makeCard("", Dropdown.shinyInput("report_type", value = "Sales", options = report_options), size = 2, style = "margin-left : 30px; width: fit-content"),
-      makeCard("", Dropdown.shinyInput("report_filter_date", value = "30", options = options), size = 2, style = "margin-left : auto;")
-    ),
-    div(
-      #Spinner(size = 3, label = "Loading, please wait..."),
-      plotlyOutput("report")
-    )
-  )
-  
-category <- Stack(
-  horizontal = FALSE,
-  class = "report-wrapper",
-  tokens = list(childrenGap = 5),
-  Stack(
-    horizontal = TRUE,
-    makeCard("", span("Report", class = 'card-title'), size = 2),
-  ),
-  div(
-    plotlyOutput("category_chart")
+sales_line_plot <- fluidRow(
+  class = "chart-wrapper",
+  column(12, fluidRow(
+    class = "chart-title-wrapper",
+    column(1, span("Report", class = 'card-title')),
+    column(2, Dropdown.shinyInput("report_type", value = "Sales", options = report_options)),
+    column(6, ""),
+    column(3, Dropdown.shinyInput("report_filter_date", value = "30", options = options))
+  )),
+  column(12, 
+         plotlyOutput("line_chart", height = "325px")
+         )
+)
+
+category_pie_chart <- fluidRow(
+  class = "chart-wrapper",
+  column(12, fluidRow(
+    class = "chart-title-wrapper",
+    column(1, span("Report", class = 'card-title')),
+  )),
+  column(12, 
+         plotlyOutput("category_chart", height = "325px")
   )
 )
-                    
+
+
+recent_orders <- fluidRow(
+  class = "chart-wrapper",
+  column(12, fluidRow(
+    class = "chart-title-wrapper",
+    column(2, span("Recent Orders", class = 'card-title')),
+  )),
+  column(12, 
+         column(12, uiOutput("recent_orders_table"))
+  )
+)
+
 app_content <- fluidPage(
       fluidRow(
-        style = "margin: 25px 0;",
+        style = "margin: 16px 0;",
         column(12, kpi)
       ),
-      column(9, report),
-      column(3, category)
+      fluidRow(
+        style= "margin: 16px 0;",
+        column(8, sales_line_plot),
+        column(4, category_pie_chart)
+      ),
+      fluidRow(
+        style= "margin: 16px 0;",
+        column(12, recent_orders)
+      )
     )
 
 app_footer <- flexPanel(
@@ -323,32 +343,35 @@ app_footer <- flexPanel(
   Text(variant = "medium", nowrap = FALSE, "Data source: Data.World")
 )
 
+view_orders <- fluidPage(
+  fluidRow(
+    column(12, 
+          uiOutput("view_orders")        
+           )
+  )
+)
 # Define UI for application that draws a histogram
 shinyUI(
+  # Loading message
+  
   fluidPage(
     tags$head(includeCSS("www/styles.css")),
-    fluidRow(
-      column(2, navigation, style="background-color : white; background-clip : padding-box;"),
-      column(10,
-             column(12, app_header, style = "background-color : white; background-clip : padding-box;"),
-             column(12, app_content)
-             )
-    )
+    useShinyjs(),
+    inlineCSS(appCSS),
+    
+    # div(id = "loading-content",
+    #     h3("loading")
+    #     ),
+  
+    # div(
+    #   id = "main-content",
+      fluidRow(
+        column(2, navigation, style="background-color : white; background-clip : padding-box;"),
+        column(10,
+               column(12, app_header, style = "background-color : white; background-clip : padding-box;"),
+               column(12, app_content))
+      )
+    #)
   )
-  # gridPage(
-  #   tags$head(includeCSS("www/styles.css")),
-  #   template = "grail-left-sidebar",
-  #   gap = "10px",
-  #   rows = list(
-  #     default = "70px 1fr 30px"
-  #   ),
-  #   columns = list(
-  #     default = "minmax(240px, 12%) auto auto"
-  #   ),
-  #   header = app_header,
-  #   sidebar = navigation,
-  #   content = app_content,
-  #   footer = app_footer
-  # )
 )
 

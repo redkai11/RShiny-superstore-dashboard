@@ -111,12 +111,20 @@ body {
  background-clip : padding-box;
 }
 
-.report-wrapper {
+.chart-wrapper {
  background-color: white;
  border-radius: var(--borderRadius);
- padding: 28px;
+ margin: 0;
+ padding: 18px 0;
+}
+
+.chart-title-wrapper{
+  height: 32px;
+  margin-bottom: 12px;
 }
 
 .net-change {
  display: contents;
 }
+
+
