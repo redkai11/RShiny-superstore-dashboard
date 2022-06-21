@@ -10,15 +10,16 @@
 library(shiny)
 library(shiny.fluent)
 library(shiny.react)
+library(shiny.router)
 library(shinyjs)
 library(imola)
 library(stringr)
-library(dplyr)
 library(readr)
 library(leaflet)
 library(glue)
 library(purrr)
 library(plotly)
+
 
 # Global CSS Variables ---------------------------------------------------------
 
@@ -60,20 +61,6 @@ makePage <- function (title, subtitle, contents) {
   contents)
 }
 
-appCSS <- "
-#loading-content {
-  position: absolute;
-  background: #000000;
-  opacity: 0.9;
-  z-index: 100;
-  left: 0;
-  right: 0;
-  height: 100%;
-  text-align: center;
-  color: #FFFFFF;
-}
-"
-
 
 # UI components ---------------------------------------------------------
 # app_header <- flexPanel(
@@ -95,18 +82,14 @@ app_header <- fluidRow(
 )
 
 
-navigation <- div(
-  div(class = "logo-wrapper",
-                 img(src = "superstore-logo.png", style = "width: 200px; margin: 0 20px;")),
+navigation <- div(class = "logo-wrapper",
+                 img(src = "superstore-logo.png", style = "width: 200px; margin: 0 20px;"),
   Nav(
     groups = list(
       list(links = list(
-        
-        div(class = "logo-wrapper",
-            img(src = "superstore-logo.png", style = "max-width:100%; max-height:100%;")
-        ),
-        list(name = 'Overview', url = '', key = 'home', icon = 'Home'),
-        list(name = "View Orders", url = '', key = 'viewOrdersNav', icon = 'AnalyticsReport'),
+        list(name = 'Overview', url = '#!/', key = 'home', icon = 'Home'),
+        list(name = 'Products',  url = '#!/products', key = 'viewProductsNav', icon = 'ProductList'),
+        list(name = "Orders", url = '#!/orders', key = 'viewOrdersNav', icon = 'ActivateOrders'),
         list(name = 'Analysis', url = '', key = 'analysis', icon = 'AnalyticsReport')
       ))
     ),
@@ -261,7 +244,7 @@ kpi <- Stack(
         TooltipHost(
           content = "Displays corresponding KPI value and change from the previous date range for the given date range.",
           delay = 0,
-          FontIcon(iconName = "info", style = "margin: 0 12px; font-size: 16px;")
+          FontIcon(iconName = "Info", style = "margin: 0 12px; font-size: 16px;")
         )), size = 2),
       makeCard("", Dropdown.shinyInput("overview_filter_date", value = "30", options = options), size = 2, style = "margin-left : auto; margin-bottom: 16px;")
     ))
@@ -319,21 +302,6 @@ recent_orders <- fluidRow(
   )
 )
 
-app_content <- fluidPage(
-      fluidRow(
-        style = "margin: 16px 0;",
-        column(12, kpi)
-      ),
-      fluidRow(
-        style= "margin: 16px 0;",
-        column(8, sales_line_plot),
-        column(4, category_pie_chart)
-      ),
-      fluidRow(
-        style= "margin: 16px 0;",
-        column(12, recent_orders)
-      )
-    )
 
 app_footer <- flexPanel(
   id = "footer",
@@ -351,27 +319,77 @@ view_orders <- fluidPage(
   )
 )
 # Define UI for application that draws a histogram
+
+home <- fluidRow(
+  fluidRow(
+    style = "margin: 16px 0;",
+    column(12, kpi)
+  ),
+  fluidRow(
+    style= "margin: 16px 0;",
+    column(8, sales_line_plot),
+    column(4, category_pie_chart)
+  ),
+  fluidRow(
+    style= "margin: 16px 0;",
+    column(12, recent_orders)
+  )
+)
+  
+products <- fluidRow(
+  class = "chart-wrapper",
+  style = "margin-top: 16px;",
+  column(12, fluidRow(
+    class = "chart-title-wrapper",
+    column(2, span("Products", class = 'card-title')),
+  )),
+  column(12,
+         column(12, uiOutput("products_table"))
+  )
+)
+
+orders <- fluidRow(
+  class = "chart-wrapper",
+  style = "margin-top: 16px;",
+  column(12, fluidRow(
+    class = "chart-title-wrapper",
+    column(2, span("Orders", class = 'card-title')),
+  )),
+  column(12,
+         column(12, uiOutput("orders_table"))
+  )
+)
+
+router <- make_router(
+  route("/", home),
+  route("products", products),
+  route("orders", orders)
+)
+
+shiny::addResourcePath("shiny.router", system.file("www", package = "shiny.router"))
+shiny_router_js_src <- file.path("shiny.router", "shiny.router.js")
+shiny_router_script_tag <- shiny::tags$script(type = "text/javascript", src = shiny_router_js_src)
+
+
+layout <- function(mainUI){
+  fluidRow(
+    column(2, 
+           navigation,
+           style = "border-radius: 0 var(--borderRadius) var(--borderRadius) 0; background-color: white; height: 1285px;"),
+    column(10,
+           column(12, 
+                  app_header, 
+                  style = "background-color: white; background-clip: content-box; padding: 0 15px; border-radius: var(--borderRadius);"),
+           column(12, mainUI)
+           )
+  )
+}
+
 shinyUI(
-  # Loading message
-  
   fluidPage(
-    tags$head(includeCSS("www/styles.css")),
-    useShinyjs(),
-    inlineCSS(appCSS),
-    
-    # div(id = "loading-content",
-    #     h3("loading")
-    #     ),
-  
-    # div(
-    #   id = "main-content",
-      fluidRow(
-        column(2, navigation, style="background-color : white; background-clip : padding-box;"),
-        column(10,
-               column(12, app_header, style = "background-color : white; background-clip : padding-box;"),
-               column(12, app_content))
-      )
-    #)
+    layout(router$ui),
+    tags$head(includeCSS("www/styles.css"),
+              shiny_router_script_tag)
   )
 )
 

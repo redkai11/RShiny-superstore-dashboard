@@ -106,11 +106,6 @@ body {
  padding: 3px 10px;
 }
 
-.logo-wrapper {
- background-color: white;
- background-clip : padding-box;
-}
-
 .chart-wrapper {
  background-color: white;
  border-radius: var(--borderRadius);
