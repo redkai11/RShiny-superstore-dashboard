@@ -1,6 +1,4 @@
 # RShiny-superstore-dashboard
-![Screenshot](Capture1.PNG)
-
 ## Technologies
 Project is created with:
 * Azure SQL Database Server
@@ -9,3 +7,8 @@ Project is created with:
 
 ## Data Source
 * Data.world (https://data.world/stanke/superstore-20214)
+
+![Screenshot](Capture2.PNG)
+![Screenshot](Capture3.PNG)
+![Screenshot](Capture4.PNG)
+
