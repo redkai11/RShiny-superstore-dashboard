@@ -9,6 +9,5 @@ Project is created with:
 * Data.world (https://data.world/stanke/superstore-20214)
 
 ![Screenshot](Capture5.PNG)
-![Screenshot](Capture4.PNG)
 ![Screenshot](Capture6.PNG)
 
