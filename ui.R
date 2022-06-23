@@ -19,6 +19,7 @@ library(leaflet)
 library(glue)
 library(purrr)
 library(plotly)
+library(geojsonio)
 
 
 # Global CSS Variables ---------------------------------------------------------
@@ -27,14 +28,10 @@ icon_style <- "width: 50px; height: 50px; border-radius: 50%; background-color: 
 
 ## Header Commander Bar
 
-header_commandbar_list <- list(
-  list(
-    key = 'download',
-    text = "Download data",
-    iconProps = list(iconName = "Download")
-  )
-)
-
+header_commandbar_list <- div(
+  CommandBarButton.shinyInput("setting", text = "Settings",
+                              iconProps = list(iconName = "Settings"),
+                              style = "height: 36px; float: right;"))
 
 # Layout ---------------------------------------------------------
 
@@ -63,22 +60,12 @@ makePage <- function (title, subtitle, contents) {
 
 
 # UI components ---------------------------------------------------------
-# app_header <- flexPanel(
-#   id = "header",
-#   align_items = "center",
-#   flex = c(0, 1),
-#   div(class = "search-bar-wrapper",
-#       SearchBox.shinyInput("search", placeholder = "Search")
-#       ),
-#   makeCard("", CommandBar(items = header_commandbar_list), style = "padding : 14px;"), 
-#   style = ""
-# )
 
 app_header <- fluidRow(
   style = "display: flex; align-items: center; margin: 12px 0",
   column(6, offset = 0, SearchBox.shinyInput("search", placeholder = "Search")),
-  column(4, ""),
-  column(2, CommandBar(items = header_commandbar_list))
+  column(3, reactOutput("settingsPanel")),
+  column(3, header_commandbar_list)
 )
 
 
@@ -279,28 +266,15 @@ sales_line_plot <- fluidRow(
          )
 )
 
-category_pie_chart <- fluidRow(
-  class = "chart-wrapper",
-  column(12, fluidRow(
-    class = "chart-title-wrapper",
-    column(1, span("Report", class = 'card-title')),
-  )),
-  column(12, 
-         plotlyOutput("category_chart", height = "325px")
+sales_target_plot <- fluidRow(
+    class = "chart-wrapper",
+    column(12,
+           class = "chart-title-wrapper",
+           span("Target Sales", class = 'card-title')),
+    column(12,
+           plotlyOutput("sales_target_chart", height = "325px")
+    )
   )
-)
-
-
-recent_orders <- fluidRow(
-  class = "chart-wrapper",
-  column(12, fluidRow(
-    class = "chart-title-wrapper",
-    column(2, span("Recent Orders", class = 'card-title')),
-  )),
-  column(12, 
-         column(12, uiOutput("recent_orders_table"))
-  )
-)
 
 
 app_footer <- flexPanel(
@@ -328,11 +302,7 @@ home <- fluidRow(
   fluidRow(
     style= "margin: 16px 0;",
     column(8, sales_line_plot),
-    column(4, category_pie_chart)
-  ),
-  fluidRow(
-    style= "margin: 16px 0;",
-    column(12, recent_orders)
+    column(4, sales_target_plot)
   )
 )
   
@@ -348,17 +318,50 @@ products <- fluidRow(
   )
 )
 
-orders <- fluidRow(
+# Orders Tab ----------------------------------------------------------------------
+
+
+category_pie_chart <- fluidRow(
   class = "chart-wrapper",
-  style = "margin-top: 16px;",
   column(12, fluidRow(
     class = "chart-title-wrapper",
-    column(2, span("Orders", class = 'card-title')),
+    column(1, span("Report", class = 'card-title')),
   )),
+  column(12,
+         plotlyOutput("category_chart", height = "325px")
+  )
+)
+
+monthly_orders_chart <- fluidRow(
+  class = "chart-wrapper",
+  column(12, fluidRow(
+    class = "chart-title-wrapper",
+    column(4, span("Monthly Orders", class = 'card-title')),
+  )),
+  column(12,
+         plotlyOutput("monthly_orders_chart", height = "325px")
+  )
+)
+
+orders <- fluidRow(
+  fluidRow(
+    style= "margin: 16px 0;",
+    column(8, monthly_orders_chart),
+    column(4, category_pie_chart)
+  ),
+  column(12, fluidRow(
+    class = "chart-title-wrapper",
+    column(2, span("Orders", class = 'card-title'))
+  )),
+  column(12,
+         column(12, leafletOutput("orders_choropleth_map"))
+  ),
   column(12,
          column(12, uiOutput("orders_table"))
   )
 )
+
+
 
 router <- make_router(
   route("/", home),
@@ -375,7 +378,8 @@ layout <- function(mainUI){
   fluidRow(
     column(2, 
            navigation,
-           style = "border-radius: 0 var(--borderRadius) var(--borderRadius) 0; background-color: white; height: 1285px;"),
+           style = "border-radius: 0 var(--borderRadius) var(--borderRadius) 0;
+           background-color: white; height: 1285px;"),
     column(10,
            column(12, 
                   app_header, 
