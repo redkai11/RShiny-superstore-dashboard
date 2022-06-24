@@ -63,7 +63,11 @@ makePage <- function (title, subtitle, contents) {
 
 app_header <- fluidRow(
   style = "display: flex; align-items: center; margin: 12px 0",
-  column(6, offset = 0, SearchBox.shinyInput("search", placeholder = "Search")),
+  column(6, offset = 0, 
+         column(8,
+                SearchBox.shinyInput("search_content", placeholder = "[CustomerID] = '10', [State] = 'California'")),
+         column(4,
+                PrimaryButton.shinyInput("search_button", text = "Search"))),
   column(3, reactOutput("settingsPanel")),
   column(3, header_commandbar_list)
 )
@@ -76,7 +80,7 @@ navigation <- div(class = "logo-wrapper",
       list(links = list(
         list(name = 'Overview', url = '#!/', key = 'home', icon = 'Home'),
         list(name = 'Products',  url = '#!/products', key = 'viewProductsNav', icon = 'ProductList'),
-        list(name = "Orders", url = '#!/orders', key = 'viewOrdersNav', icon = 'ActivateOrders'),
+        list(class = "Orders", name = "Orders", url = '#!/orders', key = 'viewOrdersNav', icon = 'ActivateOrders'),
         list(name = 'Analysis', url = '', key = 'analysis', icon = 'AnalyticsReport')
       ))
     ),
@@ -349,10 +353,14 @@ orders <- fluidRow(
     column(8, monthly_orders_chart),
     column(4, category_pie_chart)
   ),
-  column(12, fluidRow(
-    class = "chart-title-wrapper",
-    column(2, span("Orders", class = 'card-title'))
-  )),
+  column(12, 
+         class = "chart-title-wrapper",
+    column(2,
+           style = "display: flex;",
+           span("Orders", class = 'card-title'),
+           TooltipHost(content = "Select a state to view orders placed from the correponding state.", 
+                       delay = 0, FontIcon(iconName = "Info", style = "margin: 0 12px; font-size: 16px;"))
+    )),
   column(12,
          column(12, leafletOutput("orders_choropleth_map"))
   ),
@@ -391,6 +399,7 @@ layout <- function(mainUI){
 
 shinyUI(
   fluidPage(
+    useShinyjs(),
     layout(router$ui),
     tags$head(includeCSS("www/styles.css"),
               shiny_router_script_tag)
