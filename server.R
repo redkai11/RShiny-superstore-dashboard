@@ -305,6 +305,7 @@ shinyServer(function(input, output, session) {
       addResetMapButton() %>%
       addPolygons(
         fillColor = ~pal(density),
+        layerId = ~name,
         weight = 2,
         opacity = 1,
         color = "white",
@@ -320,35 +321,35 @@ shinyServer(function(input, output, session) {
         labelOptions = labelOptions(
           style = list("font-weight" = "normal", padding = "3px 8px"),
           textsize = "15px",
-          direction = "auto"),
-        layerId = ~name) %>%
+          direction = "auto")) %>%
       addLegend(pal = pal, values = ~density, opacity = 0.7, title = NULL,
                 position = "topright")
   })
   
+  # TODO: make navbar selected to Orders
   
-  # TODO : Update Orders Table based on user's onClick event to the map polygon tile
-  # state <- reactiveValues(default = "California")
-  # 
-  # observeEvent(input$orders_choropleth_map_shape_click, {
-  #   ## the sgmap2 needs to match the name of the map you're outputting above
-  #   event <- input$orders_choropleth_map_shape_click
-  #   print("yello")
-  #   #updateSelectInput(session, inputId = "name", selected = event$id)
-  # }) 
+  orders_df <- reactiveValues(data = data.frame())
   
-  # orders_df <- eventReactive(input$orders_choropleth_map_shape_click{
-  orders_df <- reactive({
-    #state <- input$orders_choropleth_map_shape_click
-    query <- paste("SELECT * FROM [dbo].[orders] WHERE [Order Date] >= 2020 AND [State] = '", "California", "'", sep = "")
-    orders_df <- dbGetQuery(con, query)
-    return(orders_df)
+  observeEvent(input$search_button,{
+    change_page("/orders", session = shiny::getDefaultReactiveDomain(), mode = "push")
+    text <- input$search_content
+    text <- str_split(text, ", ")
+    text <- paste(text, collapse = " AND ")
+    
+    query <- paste("SELECT * FROM [dbo].[Orders] WHERE ", text, sep = "")
+    orders_df$data <- dbGetQuery(con, query)
+  })
+
+  observeEvent(input$orders_choropleth_map_shape_click, {
+    click <- input$orders_choropleth_map_shape_click
+    query <- paste("SELECT * FROM [dbo].[Orders] WHERE [State] = '", click$id, "'", sep = "")
+    orders_df$data <- dbGetQuery(con, query)
   })
   
   output$orders_table <- renderUI({
-    req(orders_df())
-    items_list <- if(nrow(orders_df()) > 0){
-      DetailsList(items = orders_df())
+    req(orders_df)
+    items_list <- if(nrow(orders_df$data) > 0){
+      DetailsList(items = orders_df$data)
     } else {
       p("No matching transactions.")
     }
@@ -387,13 +388,19 @@ shinyServer(function(input, output, session) {
 #   
   # View Orders  ---------------------------------------------------------
 
+  orders_group_by_category_df <- reactive({
+    query <- c("SELECT [Category], COUNT(*) as Frequency 
+               FROM [dbo].[Orders] WHERE [Order Date] >= 2020 GROUP BY [Category]")
+    df <- dbGetQuery(con, query)
+  })
+  
   output$category_chart <- renderPlotly({
-    req(overview_orders_filtered())
-    category_df <- overview_orders_filtered() %>% count(Category, sort = TRUE)
+    req(orders_group_by_category_df())
+    category_df <- orders_group_by_category_df()
 
     colors <- c("#5EB1BF", "#D84727", "#EF7B45", "#CDEDF6", "#042A2B")
     fig <- plot_ly(category_df, labels = ~Category,
-                   values = ~n, textposition = "inside",
+                   values = ~Frequency, textposition = "inside",
                    insidetextfont = list(color = "white"), hoverinfo = "text",
                    marker = list(colors = colors,
                                  line = list(color = "white", width = 1)))
@@ -401,8 +408,6 @@ shinyServer(function(input, output, session) {
     fig <- fig %>% add_pie(hole = 0.5)
   })
   
-  
-  # TODO: Add search/filter function
 
   
 })
